@@ -377,23 +377,52 @@
         if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
       });
 
-      // --- Form validation ---
-      const form = $('contactForm');
-      form.addEventListener('submit', (e) => {
-        let valid = true;
-        const check = (inputId, errorId, test, msg) => {
-          const input = $(inputId), err = $(errorId);
-          const ok = test(input.value.trim());
-          err.textContent = ok ? '' : msg;
-          err.classList.toggle('hidden', ok);
-          input.classList.toggle('invalid', !ok);
-          if (!ok) valid = false;
-        };
-        check('name', 'nameError', v => v !== '' && /[a-zA-ZäöüÄÖÜß]/.test(v), 'Bitte geben Sie Ihren Namen ein.');
-        check('firma', 'firmaError', v => v !== '', 'Bitte geben Sie Ihr Unternehmen an.');
-        check('email', 'emailError', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Bitte eine gültige E-Mail-Adresse eingeben.');
-        if (!valid) e.preventDefault();
-      });
+      // --- Form validation + AJAX submit ---
+const form = $('contactForm');
+const statusBox = document.createElement('p');
+statusBox.className = 'text-sm mt-3 hidden';
+form.appendChild(statusBox);
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  let valid = true;
+  const check = (inputId, errorId, test, msg) => {
+    const input = $(inputId), err = $(errorId);
+    const ok = test(input.value.trim());
+    err.textContent = ok ? '' : msg;
+    err.classList.toggle('hidden', ok);
+    input.classList.toggle('invalid', !ok);
+    if (!ok) valid = false;
+  };
+  check('name', 'nameError', v => v !== '' && /[a-zA-ZäöüÄÖÜß]/.test(v), 'Bitte geben Sie Ihren Namen ein.');
+  check('firma', 'firmaError', v => v !== '', 'Bitte geben Sie Ihr Unternehmen an.');
+  check('email', 'emailError', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Bitte eine gültige E-Mail-Adresse eingeben.');
+  if (!valid) return;
+
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Wird gesendet …';
+  statusBox.classList.add('hidden');
+
+  try {
+    const res = await fetch('https://formsubmit.co/ajax/salmanmalik2610@gmail.com', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new FormData(form)
+    });
+    const data = await res.json();
+    if (!res.ok || data.success === 'false') throw new Error('send failed');
+    form.reset();
+    statusBox.textContent = 'Vielen Dank! Ihre Anfrage wurde gesendet. Ich melde mich zeitnah.';
+    statusBox.className = 'text-sm mt-3 text-emerald-400';
+  } catch (err) {
+    statusBox.textContent = 'Das Senden hat leider nicht geklappt. Bitte schreiben Sie mir direkt an salmanmalik2610@gmail.com.';
+    statusBox.className = 'text-sm mt-3 text-red-400';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Anfrage sicher senden';
+  }
+});
 
       // --- Scroll reveal (with fallback) ---
       const items = document.querySelectorAll('.reveal');
